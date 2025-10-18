@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Advanced Scientific Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+body {
+  font-family: 'Roboto', sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  background: #f0f4f8;
+  padding: 20px;
+}
+body.dark-mode { background: #121212; color: #e0e0e0; }
+
+.calculator {
+  background: #fff;
+  border-radius: 25px;
+  padding: 25px;
+  width: 520px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+body.dark-mode .calculator { background: #1e1e1e; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+
+input {
+  width: 100%;
+  height: 50px;
+  font-size: 26px;
+  text-align: right;
+  margin-bottom: 20px;
+  padding: 10px;
+  border-radius: 15px;
+  border: 1px solid #ccc;
+  background: #f9f9f9;
+  color: #333;
+}
+body.dark-mode input { background: #2b2b2b; color: #fff; border: 1px solid #555; }
+
+.buttons { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+
+button {
+  padding: 16px;
+  font-size: 16px;
+  border-radius: 15px;
+  cursor: pointer;
+  border: none;
+  font-weight: 500;
+  transition: all 0.2s;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+button:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.25); }
+button:active { transform: translateY(1px); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+.number { background: linear-gradient(145deg, #3498db, #2980b9); color: #fff; }
+.operator { background: linear-gradient(145deg, #f39c12, #d35400); color: #fff; }
+.func { background: linear-gradient(145deg, #9b59b6, #8e44ad); color: #fff; }
+.equal { background: linear-gradient(145deg, #2ecc71, #27ae60); color: #fff; }
+.clear { background: linear-gradient(145deg, #e74c3c, #c0392b); color: #fff; }
+
+#modeToggle { margin-bottom: 15px; background: #555; color: #fff; border-radius: 15px; border: none; padding: 10px 15px; cursor: pointer; }
+#modeToggle:hover { opacity: 0.8; }
+</style>
+</head>
+<body>
+
+<div class="calculator">
+  <button id="modeToggle">🌙 Dark Mode</button>
+  <input type="text" id="screen" disabled>
+  <div class="buttons">
+    <!-- Row 1 -->
+    <button onclick="press('7')" class="number">7</button>
+    <button onclick="press('8')" class="number">8</button>
+    <button onclick="press('9')" class="number">9</button>
+    <button onclick="press('(')" class="func">(</button>
+    <button onclick="press(')')" class="func">)</button>
+    <button onclick="clearScreen()" class="clear">C</button>
+
+    <!-- Row 2 -->
+    <button onclick="press('4')" class="number">4</button>
+    <button onclick="press('5')" class="number">5</button>
+    <button onclick="press('6')" class="number">6</button>
+    <button onclick="press('*')" class="operator">*</button>
+    <button onclick="press('/')" class="operator">/</button>
+    <button onclick="backspace()" class="func">⌫</button>
+
+    <!-- Row 3 -->
+    <button onclick="press('1')" class="number">1</button>
+    <button onclick="press('2')" class="number">2</button>
+    <button onclick="press('3')" class="number">3</button>
+    <button onclick="press('+')" class="operator">+</button>
+    <button onclick="press('-')" class="operator">-</button>
+    <button onclick="calculate()" class="equal">=</button>
+
+    <!-- Row 4 -->
+    <button onclick="press('0')" class="number">0</button>
+    <button onclick="press('.')" class="number">.</button>
+    <button onclick="toggleSign()" class="func">±</button>
+    <button onclick="modFunc()" class="func">mod</button>
+    <button onclick="percentFunc()" class="func">%</button>
+    <button onclick="toggleFraction()" class="func">SD</button>
+
+    <!-- Row 5: Scientific -->
+    <button onclick="sqrt()" class="func">√</button>
+    <button onclick="square()" class="func">x²</button>
+    <button onclick="power()" class="func">x^y</button>
+    <button onclick="reciprocal()" class="func">1/x</button>
+    <button onclick="expFunc()" class="func">e^x</button>
+    <button onclick="lnFunc()" class="func">ln</button>
+
+    <!-- Row 6 -->
+    <button onclick="logFunc()" class="func">log</button>
+    <button onclick="sinFunc()" class="func">sin</button>
+    <button onclick="cosFunc()" class="func">cos</button>
+    <button onclick="tanFunc()" class="func">tan</button>
+    <button onclick="piFunc()" class="func">π</button>
+    <button onclick="copyResult()" class="func">Copy</button>
+
+    <!-- Angle mode toggle -->
+    <button id="angleToggle" class="func" style="grid-column: span 6;">Mode: DEG</button>
+  </div>
+</div>
+
+<script>
+const screen = document.getElementById('screen');
+let resetScreen=false;
+let angleMode='deg';
+let isFraction=false;
+
+// Dark mode toggle
+document.getElementById('modeToggle').addEventListener('click',()=>{
+  document.body.classList.toggle('dark-mode');
+  document.getElementById('modeToggle').textContent = document.body.classList.contains('dark-mode') ? '☀️ Light Mode':'🌙 Dark Mode';
+});
+
+// Angle mode toggle
+document.getElementById('angleToggle').addEventListener('click',()=>{
+  angleMode = angleMode==='deg'?'rad':'deg';
+  document.getElementById('angleToggle').textContent=`Mode: ${angleMode.toUpperCase()}`;
+});
+
+// Core functions
+function press(val){ if(resetScreen){screen.value=''; resetScreen=false;} screen.value+=val; isFraction=false; }
+function calculate(){ try{ screen.value = eval(screen.value.replace('^','**')); resetScreen=true; isFraction=false; }catch{ screen.value='Error'; resetScreen=true; } }
+function clearScreen(){ screen.value=''; isFraction=false; }
+function backspace(){ screen.value=screen.value.slice(0,-1); }
+
+// Scientific
+function sqrt(){ screen.value=Math.sqrt(eval(screen.value)); resetScreen=true; isFraction=false; }
+function square(){ screen.value=Math.pow(eval(screen.value),2); resetScreen=true; isFraction=false; }
+function power(){ press('**'); }
+function reciprocal(){ screen.value=1/eval(screen.value); resetScreen=true; isFraction=false; }
+function expFunc(){ screen.value=Math.exp(eval(screen.value)); resetScreen=true; isFraction=false; }
+function lnFunc(){ screen.value=Math.log(eval(screen.value)); resetScreen=true; isFraction=false; }
+function logFunc(){ screen.value=Math.log10(eval(screen.value)); resetScreen=true; isFraction=false; }
+
+// Angle conversion
+function toAngle(val){ return angleMode==='deg'? val*Math.PI/180: val; }
+function fromAngle(val){ return angleMode==='deg'? val*180/Math.PI: val; }
+
+// Trig functions with standard fractions for special angles
+function sinFunc(){ calcTrig('sin'); }
+function cosFunc(){ calcTrig('cos'); }
+function tanFunc(){ calcTrig('tan'); }
+
+function calcTrig(func){
+  let val = eval(screen.value);
+  if(angleMode==='deg'){
+    const deg = val % 360;
+    const specials = {0:0,30:'1/2',45:'√2/2',60:'√3/2',90:1,180:0,270:-1,360:0};
+    if(specials[deg]!==undefined){ screen.value=specials[deg]; resetScreen=true; return; }
+  }
+  if(func==='sin') screen.value=Math.sin(toAngle(val));
+  else if(func==='cos') screen.value=Math.cos(toAngle(val));
+  else if(func==='tan') screen.value=Math.tan(toAngle(val));
+  resetScreen=true;
+}
+
+// Pi function
+function piFunc(){ screen.value=Math.PI; resetScreen=true; isFraction=false; }
+
+// Copy
+function copyResult(){ navigator.clipboard.writeText(screen.value); alert('Result copied!'); }
+
+// Fraction toggle
+function toggleFraction(){
+  try{
+    let val=eval(screen.value);
+    if(isFraction){ screen.value=val; isFraction=false; }
+    else{
+      function gcd(a,b){ return b?gcd(b,a%b):a; }
+      let tolerance=1e-10, n=1,d=1, l_n=0,l_d=1,u_n=1,u_d=0;
+      while(true){
+        let m_n=l_n+u_n, m_d=l_d+u_d;
+        if(m_d*(val+tolerance)<m_n){ u_n=m_n; u_d=m_d; }
+        else if(m_n<(val-tolerance)*m_d){ l_n=m_n; l_d=m_d; }
+        else { n=m_n; d=m_d; break; }
+      }
+      let g=gcd(n,d); n/=g; d/=g;
+      screen.value=n+"/"+d; isFraction=true;
+    }
+    resetScreen=true;
+  }catch{ screen.value='Error'; resetScreen=true; }
+}
+
+// Other utility functions
+function toggleSign(){ screen.value=eval(screen.value)*-1; resetScreen=true; }
+function percentFunc(){ screen.value=eval(screen.value)/100; resetScreen=true; }
+function modFunc(){ press('%'); }
+
+// Keyboard support
+document.addEventListener('keydown',e=>{
+  if((e.key>='0' && e.key<='9') || ['+','-','*','/','.','(',')'].includes(e.key)) press(e.key);
+  else if(e.key==='Enter') calculate();
+  else if(e.key==='Backspace') backspace();
+  else if(e.key.toLowerCase()==='c') clearScreen();
+});
+</script>
+
+</body>
+</html>
